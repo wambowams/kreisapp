@@ -1,0 +1,115 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-avatar-image/paper-avatar-image.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="my-bier">
+    <template>
+        <style include="shared-styles">
+            :host {
+                display: block;
+
+                padding: 10px;
+            }
+
+            h1, p {
+                margin: 0;
+            }
+
+            paper-avatar-image {
+                width: 4rem;
+                height: 4rem;
+                border-radius: 2rem;
+                margin-right: 8px;
+            }
+
+            paper-fab {
+                position: fixed;
+                bottom: 20px;
+                right: 8px;
+                --paper-fab-background: var(--app-primary-color);
+            }
+        </style>
+        <template is="dom-repeat" items="{{userData}}">
+            <div class="card">
+                <div class="horizontal center-op">
+                    <paper-avatar-image src="{{item.userdata.photoURL}}" mode="rounded"></paper-avatar-image>
+                    <div>
+                        <h1>{{item.userdata.displayName}}</h1>
+                        <p>Muss noch {{item.bier.exen}} Bier exen.</p>
+                    </div>
+                </div>
+                <h3>Bierschulden:</h3>
+                <div>
+                    <template is="dom-repeat" items="{{item.bier.schulden}}">
+                        <div class="horizontal">
+                            <div class="flex1">
+                                {{item.name}}:
+                            </div>
+                            {{item.anzahl}}
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+        <paper-dialog entry-animation="scale-up-animation" id="dialog">
+            <h2>Schulden hinzufügen</h2>
+            <h4>
+                Schuldner:
+            </h4>
+            <div>
+                muss Exen:
+            </div>
+            <div>
+                Schulden
+            </div>
+            <div>
+                Alexander Wambo
+            </div>
+            <div>
+                Alexander Wambo
+            </div>
+            <paper-button>speichern</paper-button>
+        </paper-dialog>
+        <paper-fab icon="add" on-tap="_openDialog"></paper-fab>
+        <firebase-query
+                path="/users"
+                data="{{userData}}">
+        </firebase-query>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'my-bier',
+            properties: {
+                userData: {
+                    type: Object,
+                    observer: '_userDataObserver'
+                }
+            },
+
+            _userDataObserver: function () {
+                console.log(this.userData);
+            },
+
+            _openDialog: function (e) {
+                this.$.dialog.positionTarget = e.target;
+                this.$.dialog.open();
+            }
+        });
+    </script>
+</dom-module>

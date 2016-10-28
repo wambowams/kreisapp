@@ -1,0 +1,109 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/polymerfire/polymerfire.html">
+<link rel="import" href="../bower_components/paper-avatar-image/paper-avatar-image.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="my-login-view">
+    <template>
+        <style include="shared-styles">
+            :host {
+                display: block;
+
+                padding: 10px;
+            }
+
+            paper-button.indigo {
+                background-color: var(--paper-indigo-400);
+                color: white;
+            }
+
+            paper-avatar-image {
+                width: 8rem;
+                height: 8rem;
+                border-radius: 4rem;
+            }
+        </style>
+        <div class="card">
+            <template is="dom-if" if="{{!signedIn}}">
+                <h3>Login</h3>
+                <p>Bitte melden Sie sich mit Ihrem Google Account an um vollen Zugriff auf die App zu erhalten.</p>
+                <div class="horizontal center">
+                    <paper-button class="indigo" on-tap="login">Mit Google anmelden</paper-button>
+                </div>
+            </template>
+            <template is="dom-if" if="{{signedIn}}">
+                <div class="horizontal center">
+                    <paper-avatar-image src="[[userData.photoURL]]" mode="rounded"></paper-avatar-image>
+                </div>
+                <h3>Willkommen [[userData.displayName]]</h3>
+                <p>Viel Spaß bei der Nutzung der Kreisapp.</p>
+            </template>
+        </div>
+        <firebase-auth id="auth" user="{{user}}" provider="google" on-error="handleError" signed-in="{{signedIn}}">
+        </firebase-auth>
+        <firebase-document id="usersElement"></firebase-document>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'my-login-view',
+            properties: {
+                user: {
+                    type: Object,
+                    value: null,
+                    notify: true,
+                    reflectToAttribute: true,
+                    observer: '_userObserver'
+                },
+                signedIn: {
+                    type: Boolean,
+                    value: false,
+                    notify: true,
+                    reflectToAttribute: true
+                },
+                userData: {
+                    type: Object,
+                    value: null,
+                    notify: false
+                },
+                users: {
+                    type: Object
+                }
+            },
+
+            ready: function (event) {
+            },
+
+            login: function (e) {
+                this.$.auth.signInWithPopup();
+            },
+
+            logout: function () {
+                this.$.auth.signOut();
+            },
+
+            updateUser: function(data) {
+                this.$.usersElement.data =  data.providerData[0];
+                this.$.usersElement.save('users', data.uid + '/userdata');
+            },
+
+            _userObserver: function () {
+                if(this.user != null) {
+                    this.userData = this.user.providerData[0];
+                    this.updateUser(this.user);
+                }
+            }
+        });
+    </script>
+</dom-module>

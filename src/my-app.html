@@ -1,0 +1,199 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/polymerfire/polymerfire.html">
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="./my-login-view.html">
+<link rel="import" href="my-icons.html">
+
+<dom-module id="my-app">
+    <template>
+        <style>
+            :host {
+                --app-primary-color: #4285f4;
+                --app-secondary-color: var(--paper-amber-200);
+
+                display: block;
+            }
+
+            app-header {
+                color: #fff;
+                background-color: var(--app-primary-color);
+            }
+
+            app-header paper-icon-button {
+                --paper-icon-button-ink-color: white;
+            }
+
+            .drawer-list {
+                margin: 0 20px;
+            }
+
+            .drawer-list a {
+                display: block;
+
+                padding: 0 16px;
+
+                text-decoration: none;
+
+                color: black;
+
+                line-height: 40px;
+            }
+
+            .drawer-list a.iron-selected {
+                color: black;
+
+                font-weight: bold;
+            }
+
+            paper-toast a {
+                color: var(--app-secondary-color);
+            }
+        </style>
+
+        <firebase-app auth-domain="kreisbier.firebaseapp.com"
+                      database-url="https://kreisbier.firebaseio.com"
+                      api-key="AIzaSyBYNodwI8vlkzWD9CZ-0MtKmiNfSrGjF-w"
+                      storage-bucket="kreisbier.appspot.com">
+        </firebase-app>
+        <app-location route="{{route}}"></app-location>
+        <app-route
+                route="{{route}}"
+                pattern="/:page"
+                data="{{routeData}}"
+                tail="{{subroute}}"></app-route>
+
+        <app-drawer-layout fullbleed id="drawer">
+            <!-- Drawer content -->
+            <template is="dom-if" if="{{signedIn}}">
+                <app-drawer>
+                    <app-toolbar>Menu</app-toolbar>
+                    <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
+                        <a name="" href="/">Start</a>
+                        <a name="bier" href="/bier">View One</a>
+                        <a name="view2" href="/view2">View Two</a>
+                        <a name="view3" href="/view3">View Three</a>
+                    </iron-selector>
+                </app-drawer>
+            </template>
+
+            <!-- Main content -->
+            <app-header-layout has-scrolling-region>
+
+                <app-header condenses reveals effects="waterfall">
+                    <app-toolbar>
+                        <template is="dom-if" if="{{signedIn}}">
+                            <paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
+                        </template>
+                        <div main-title>Kreisapp</div>
+                        <template is="dom-if" if="{{signedIn}}">
+                            <paper-button on-tap="_logout">logout</paper-button>
+                        </template>
+                    </app-toolbar>
+                </app-header>
+
+                <iron-pages
+                        id="pageSelector"
+                        selected="[[page]]"
+                        attr-for-selected="name"
+                        fallback-selection="view404"
+                        role="main">
+                    <my-login-view name="" id="login" user="{{user}}" signed-in="{{signedIn}}"></my-login-view>
+                    <my-bier name="bier"></my-bier>
+                    <my-view2 name="view2"></my-view2>
+                    <my-view3 name="view3"></my-view3>
+                    <my-view404 name="view404"></my-view404>
+                </iron-pages>
+                <paper-toast text="Sie sind nicht eingeloggt, bitte melden Sie sich an." duration="0" id="loginMessage">
+                    <a href="/" on-tap="_closeToast">zum Login</a>
+                </paper-toast>
+            </app-header-layout>
+        </app-drawer-layout>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'my-app',
+
+            properties: {
+                page: {
+                    type: String,
+                    reflectToAttribute: true,
+                    observer: '_pageChanged'
+                },
+                signedIn: {
+                    type: Boolean,
+                    observer: '_signedInChanged'
+                },
+                user: {
+                    type: Object
+                }
+
+            },
+
+            observers: [
+                '_routePageChanged(routeData.page)'
+            ],
+
+            _routePageChanged: function (page) {
+                this.page = page || '';
+            },
+
+            _pageChanged: function (page) {
+                // Load page import on demand. Show 404 page if fails
+                if(page != '') {
+                    var resolvedPageUrl = this.resolveUrl('my-' + page + '.html');
+                    this.importHref(resolvedPageUrl, null, this._showPage404, true);
+                }
+            },
+
+            _showPage404: function () {
+                this.page = 'view404';
+            },
+
+            _signedInChanged: function () {
+                if(this.signedIn) {
+                    this.$.loginMessage.close();
+                }
+                else {
+                    if(this.route.path != '/') {
+                        this.$.loginMessage.open();
+                    }
+                }
+
+                if(this.route.path != '' && !this.signedIn) {
+                    this.set('route.path', '');
+                }
+                this.$.drawer.resetLayout();
+            },
+
+            _logout: function (e) {
+                this.$.login.logout();
+            },
+
+            _closeToast: function (e) {
+                this.$.loginMessage.close();
+            }
+        });
+    </script>
+</dom-module>
